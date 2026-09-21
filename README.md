@@ -304,4 +304,4 @@ A prebuilt `hw/p4_platform.xsa` is included, so the software can be built withou
 
 ---
 
-*Built by [Oshio](https://github.com/Jehka).*
+*Built by [Jehka](https://github.com/Jehka).*
