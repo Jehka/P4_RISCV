@@ -1,0 +1,28 @@
+# Vivado generated
+*.jou
+*.log
+*.str
+*.pb
+.Xil/
+.Xiltemp/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.sim/
+*.runs/
+*.gen/
+*.xpr
+vivado_*.backup.*
+webtalk*
+
+# Vitis generated
+_ide/
+build/
+*.elf
+compile_commands.json
+.analytics
+.metadata/
+
+# OS
+.DS_Store
+Thumbs.db
