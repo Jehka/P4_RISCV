@@ -39,7 +39,12 @@ module mem_stage_axi (
   always_comb begin
     store_wdata = rs2_data;
     store_be    = 4'h0;
-    unique case (funct3)
+    // Only shape on an actual store. funct3 == 3'b000 is also ADDI/ADD/BEQ,
+    // so ungated this block evaluated alu_result[1:0] for every such
+    // instruction. With an unreset regfile that value is X in simulation,
+    // which is what tripped the unique-case warning below. Outputs are only
+    // consumed when mem_write is high, so gating changes no behaviour.
+    if (mem_write) unique case (funct3)
       3'b000: begin // SB
         unique case (alu_result[1:0])
           2'b00: begin store_wdata = {24'b0, rs2_data[7:0]};         store_be = 4'b0001; end
@@ -60,6 +65,13 @@ module mem_stage_axi (
       end
     endcase
   end
+
+  // synthesis translate_off
+  // A store with an unknown byte offset is a real bug, not X-noise.
+  always @(posedge clk)
+    if (rst_n && mem_write && $isunknown(alu_result[1:0]))
+      $error("mem_stage_axi: store with X address offset, alu_result=%h", alu_result);
+  // synthesis translate_on
 
   // ---------------- request FSM ----------------
   typedef enum logic [1:0] {M_IDLE, M_REQ, M_WAIT} mstate_e;

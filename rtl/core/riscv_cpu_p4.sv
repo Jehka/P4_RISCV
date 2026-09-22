@@ -139,7 +139,14 @@ module riscv_cpu_p4 #(
 
     // ══ IF/ID register ════════════════════════════════════════════
     always_ff @(posedge clk or posedge rst) begin
-        if (rst || (if_id_flush && !mem_stall)) begin
+        if (rst) begin
+            if_id_instr    <= 32'h0000_0013; // NOP = ADDI x0,x0,0
+            if_id_pc       <= 32'b0;
+            if_id_pc_plus4 <= 32'b0;
+        end else if (if_id_flush && !mem_stall) begin
+            // Synchronous flush. Previously OR'd into the async-reset
+            // condition, which synthesises as a LUT-driven CLR (LUTAR-1)
+            // and clears mid-cycle on hardware but only at the edge in sim.
             if_id_instr    <= 32'h0000_0013; // NOP = ADDI x0,x0,0
             if_id_pc       <= 32'b0;
             if_id_pc_plus4 <= 32'b0;
@@ -182,7 +189,29 @@ module riscv_cpu_p4 #(
 
     // ══ ID/EX register ════════════════════════════════════════════
     always_ff @(posedge clk or posedge rst) begin
-        if (rst || (id_ex_flush && !mem_stall)) begin
+        if (rst) begin
+            id_ex_pc         <= 32'b0;
+            id_ex_rs1_data   <= 32'b0;
+            id_ex_rs2_data   <= 32'b0;
+            id_ex_imm        <= 32'b0;
+            id_ex_rs1        <= 5'b0;
+            id_ex_rs2        <= 5'b0;
+            id_ex_rd         <= 5'b0;
+            id_ex_funct3     <= 3'b0;
+            id_ex_funct7_5   <= 1'b0;
+            id_ex_opcode     <= 7'b0;
+            id_ex_reg_write  <= 1'b0;
+            id_ex_mem_to_reg <= 1'b0;
+            id_ex_mem_read   <= 1'b0;
+            id_ex_mem_write  <= 1'b0;
+            id_ex_branch     <= 1'b0;
+            id_ex_jump       <= 1'b0;
+            id_ex_alu_src    <= 1'b0;
+            id_ex_alu_op     <= 2'b0;
+        end else if (id_ex_flush && !mem_stall) begin
+            // Synchronous flush. Previously OR'd into the async-reset
+            // condition, which synthesises as a LUT-driven CLR (LUTAR-1)
+            // and clears mid-cycle on hardware but only at the edge in sim.
             id_ex_pc         <= 32'b0;
             id_ex_rs1_data   <= 32'b0;
             id_ex_rs2_data   <= 32'b0;

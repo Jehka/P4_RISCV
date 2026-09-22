@@ -115,8 +115,23 @@ module p4_top (
     input  wire fi_cfg_rready
 );
 
-    // Single inversion point for the active-high -> active-low boundary.
-    wire rst_n = ~rst;
+    // Registered reset. The incoming rst is the OR of the power-on reset and
+    // the CPU-hold GPIO, built from a LUT in the block design. Feeding that
+    // straight to async CLR/PRE pins is LUTAR-1: a LUT output can glitch.
+    // Both sources are synchronous to clk (proc_sys_reset and AXI GPIO on
+    // the same FCLK), so two plain flops remove the LUT from every async
+    // reset path. Cost: reset asserts and releases 2 cycles later.
+    // Both polarities come straight from flops -- no inverter on the net.
+    reg [1:0]                         rst_pipe  = 2'b11;
+    reg                               rst_q     = 1'b1;
+    reg                               rst_n_q   = 1'b0;
+    always @(posedge clk) begin
+        rst_pipe <= {rst_pipe[0], rst};
+        rst_q    <=  rst_pipe[1];
+        rst_n_q  <= ~rst_pipe[1];
+    end
+    wire rst_i = rst_q;     // active-high, distributed inside p4_top
+    wire rst_n = rst_n_q;   // active-low,  distributed inside p4_top
 
     // ---- internal master/slave nets ----
     wire [31:0] cpu_d_awaddr;
@@ -194,7 +209,7 @@ module p4_top (
     // ================= CPU (pipeline + cache + DMA) =================
     minerva_p4_cpu_wrapper u_cpu (
         .clk (clk),
-        .rst (rst),
+        .rst (rst_i),
         .debug_out     (debug_out),
         .mem_stall_out (mem_stall_out),
         .if_stall_out  (if_stall_out),
